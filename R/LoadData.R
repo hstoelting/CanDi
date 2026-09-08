@@ -28,19 +28,21 @@ Labs2 <- c("Con_PBS" = "Control/PBS",
 LabelsT <- c("PBS" = expression("PBS"), "Candida" = expression(italic("C. albicans")))
 LabelsP <- c("Control", "Diabetic")
 
-metadata <- read.csv(file = file.path("data", "HS17_metadata.csv"), stringsAsFactors = FALSE) %>%
+metadata <- read.csv(file = file.path("data", "CanDi_metadata.csv"), stringsAsFactors = FALSE) %>%
   mutate(Genotype = factor(Genotype, levels = Genotypes), 
          Phenotype = factor(Phenotype, levels = Phenotypes), 
          Treatment = factor(Treatment, levels = Treatments),
          Group = factor(Group, levels = Groups))
 
-names <- read.csv(file = file.path("data", "HS17_Metabolomics_Metabolite-names.csv"), stringsAsFactors = FALSE)
+names <- read.csv(file = file.path("data", "CanDi_Metabolomics_Metabolite-names.csv"), stringsAsFactors = FALSE)
 met.lookup <- setNames(names$Label_Conf, names$Metabolite)
 
-gene_aliases <- qs_read(file = file.path("data", "HS17_omics_gene-aliases.qs2"))
-gene_aliases_trans <- qs_read(file = file.path("data", "HS17_omics_gene-aliases_trans.qs2"))
-gene_aliases_prot <- qs_read(file = file.path("data", "HS17_omics_gene-aliases_prot.qs2"))
-pathlist <- qs_read(file = file.path("data", "HS17_omics_pathlist.qs2"))
-pathway.options <- qs_read(file = file.path("data", "HS17_omics_pathway.options.qs2"))
-misc.data.names <- read.csv(file = file.path("data", "HS17_misc data_names.csv"), stringsAsFactors = FALSE)
+gene_aliases <- qs_read(file = file.path("data", "CanDi_omics_gene-aliases.qs2"))
+gene_aliases_trans <- qs_read(file = file.path("data", "CanDi_omics_gene-aliases_trans.qs2"))
+gene_aliases_prot <- qs_read(file = file.path("data", "CanDi_omics_gene-aliases_prot.qs2"))
+pathlist <- qs_read(file = file.path("data", "CanDi_omics_pathlist.qs2"))
+pathway.options <- qs_read(file = file.path("data", "CanDi_omics_pathway.options.qs2"))
+misc.data.names <- read.csv(file = file.path("data", "CanDi_misc data_names.csv"), stringsAsFactors = FALSE)
 misc.lookup <- setNames(misc.data.names$Name, misc.data.names$Measurement)
+abbreviations <- read.csv(file = file.path("data", "Abbreviations.csv"), stringsAsFactors = FALSE)
+

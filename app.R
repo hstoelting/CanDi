@@ -1,10 +1,7 @@
 ####loading packages ####
-print("loading packages")
-print(Sys.time())
 library(shiny)
 library(bslib)
 library(plotly)
-library(HelensTools)
 library(ggplot2)
 library(scales)
 library(egg)
@@ -24,13 +21,11 @@ library(onewaytests)
 library(dunn.test)
 library(MESS)
 library(dr4pl)
-#library(HelensTools)
 library(eulerr)
 library(ggrepel)
 library(limma)
 library(edgeR)
 library(jsonlite)
-#library(randomForest)
 library(qs2)
 library(DT)
 library(shinyjs)
@@ -42,23 +37,18 @@ library(msigdbr)
 library(renv)
 source("R/HelperFunctions.R")
 source("R/LoadData.R")
-# setwd("C:/Users/hsto0009/OneDrive - Monash University/Experiments/HS17 - 1x10^5 C. albicans in BKS.db for omics/R_HS17/shiny/Omics dashboard")
-# renv::init()
-# renv::status()
-#renv::snapshot()
+
 
 
 
 # UI ------
-print("starting UI")
-print(Sys.time())
 ui <- page_navbar(
 
   header = tagList(
     use_waiter(), 
     waiter_show_on_load(
       spin_fading_circles(), 
-      html = h3("Loading omics dashboard...")
+      html = h3("Loading CanDi (Candida in Diabetes)...")
     )
   ),
 
@@ -66,7 +56,9 @@ ui <- page_navbar(
   theme = bs_theme(
     version = 5, 
     primary = "#006DAE",
-    secondary = "#862164"
+    secondary = "#862164", 
+    base_font = "Arial, sans-serif",
+    heading_font = "Arial, sans-serif"
   ), 
   #CSS styles ----
   tags$head(
@@ -97,6 +89,7 @@ ui <- page_navbar(
     .card-custom {background-color: #F6F6F6; border-radius: 0px; padding: 5px ; border: 1px solid #bebebe; box-shadow: 2px 5px 2px #bebebe;  }
     .card-custom .card-body {color: black; font-size: 14px; text-align: center; display: flex; flex-direction: column; justify-content: center}
     .card-custom .card-header {text-align: center; display: flex; justify-content: center; align-items: center; }
+    .card-custom .card-body table {text-align: initial; }
     .card-content {background-color: white ; border-radius: 0px; padding: 0px ; border: 1px solid #F6F6F6; box-shadow: 2px 5px 2px #F6F6F6; 
                   min-height: 400px; height: auto;  }
     .card-content .card-body {color: black; font-size: 14px; text-align: center; padding: 5px;  }
@@ -105,6 +98,10 @@ ui <- page_navbar(
                   min-height: 200px; height: auto;  }
     .card-content-sm .card-body {color: black; font-size: 14px; text-align: center; padding: 5px;  }
     .card-content-sm .card-header {text-align: center; }
+    .card-about {background-color: #F6F6F6; border-radius: 0px; padding: 5px ; border: 1px solid #bebebe; box-shadow: 2px 5px 2px #bebebe;  }
+    .card-about .card-header {text-align: center; }
+    .card-about .card-body {color: black; font-size: 14px; justify-content: left; text-align: justify; }
+    .card-about .card-body table {text-align: initial; }
     .button-grey {background-color: #006dae; font-size: 14px; text-align: center; color: white; border: none; 
                   border-radius: 1px; font-weight: 600; height: 60px; }
     .button-grey-sm {background-color: #006dae; font-size: 12px; text-align: center; color: white; border: none; 
@@ -132,18 +129,29 @@ ui <- page_navbar(
       $(this).toggleClass('flipped');
     });
          ")#HTML
-    )#tags$script
+    ), #tags$script
+    tags$link(
+      rel = "shortcut icon", href = "favicon.svg"
+      )#tags$link
   ), #$tags$head
   
 
   # App title ----
-  title = "Omics dashboard",
+  title = tags$a(
+    href = "#",
+    onclick = "Shiny.setInputValue('logo_click', Date.now()); return false;",
+    tags$img(
+    src = "Shiny app Logo with text.svg",
+    height = "100px"
+    )
+  ),
   id = "main_nav",
   
 
   #tab 0: landing page ----
   nav_panel(
     title = "Home",
+    value = "home", 
     fluidRow(
       layout_column_wrap(
         width = 1, 
@@ -152,9 +160,9 @@ ui <- page_navbar(
           class = "card-custom", 
           card_header(
             style = "background-color: #006dae; color: white; font-size: 14px; font-weight: bold; border-radius: 0px;",
-            "Welcome"),
-          height = 120,
-          p("Choose from the options below to explore the multi-omics data sets of Stölting et al.")
+            "Welcome to CanDi (Candida in Diabetes)"),
+          HTML("<p>Choose from the options below to explore the multi-omics data sets of Stölting <i>et al</i>.<br>
+               For any questions or feedback, please reach out to Dr Helen Stölting (<a href = 'mailto:helen.stoelting@monash.edu'', target = '_blank'>helen.stoelting@monash.edu</a>).</p>")
           )#card
       ), #column 
       layout_column_wrap(
@@ -164,7 +172,7 @@ ui <- page_navbar(
           card_header(
             actionButton(
             "goabout",
-            "About the omics dashboard",
+            "About CanDi",
             class = "button-grey",
             width = "100%", 
             icon = icon("circle-info")
@@ -173,7 +181,7 @@ ui <- page_navbar(
           class = "card-custom",
           height = 150,
           card_body(
-            p("Learn about the experimental set-up, find details about the data analysis and explanations on how to use the Omics dashboard")
+            p("Learn about the experimental set-up and find helpful hints about using CanDi")
           )#end of card_body
         ), #end of card
         card(
@@ -189,7 +197,7 @@ ui <- page_navbar(
         class = "card-custom",
         height = 150,
         card_body(
-          p("Explore transcriptomics and proteomics side-by-side with volcano plots and boxplots")
+          p("Explore mouse transcriptomics and proteomics side-by-side with volcano plots and boxplots")
         )#end of card_body
       ), #end of card
         card(
@@ -274,7 +282,7 @@ ui <- page_navbar(
           height = 150,
           class = "card-custom", 
           card_body(
-             p("Sharing is caring: Find shared differential expression and create Euler diagrams")
+             p("Sharing is caring: Find shared differential expression in mouse transcriptomics and proteomics data and create Euler diagrams")
         
           )#card_body
          
@@ -283,7 +291,7 @@ ui <- page_navbar(
         card_header(
           actionButton(
             "gofungal",
-            "Fungal Omics",
+            "Fungal Transcriptomics",
             class = "button-grey",
             width = "100%", 
             icon = icon("bugs")
@@ -292,29 +300,12 @@ ui <- page_navbar(
         height = 150,
         class = "card-custom", 
         card_body(
-          p("Explore differences in fungal transcripts and proteins between phenotypes")
+          p("Explore differences in fungal transcripts between phenotypes (limited depth)")
           
         )#card_body
         
-      ), #end of card#end of card
-        card(
-          card_header(
-            actionButton(
-              "gomixomics2",
-              "mixOmics",
-              class = "button-grey",
-              width = "100%", 
-              icon = icon("network-wired")
-            )#end of actionButton
-          ),
-          height = 150,
-          class = "card-custom", 
-          card_body(
-            p("Perform multi-omics integration with the help of mixOmics")
-            
-          )#card_body
-          
-        )#end of card#end of card
+      ) #end of card#end of card
+        
       ) #end of column
 
     )#end of fluidRow
@@ -324,7 +315,7 @@ ui <- page_navbar(
     title = "About", 
     value = "about",
     navset_pill_list(
-      widths = c(3, 9), 
+      widths = c(2, 10), 
       nav_panel(
         title = "Experiment", 
         value = "aboutexp", 
@@ -371,7 +362,7 @@ ui <- page_navbar(
                 class = "flip-card-back", 
                 p(HTML("<ol>
 <li>Mice were euthanised by cervical dislocation, immediately decapitated, trunk blood collected and blood glucose levels measured.&nbsp;</li>
-<li>Right kidneys&nbsp;were diseccted, capsules removed and the tissues were washed in ice-cold saline and blotted dry on Whatman paper. 
+<li>Right kidneys&nbsp;were dissected, capsules removed and the tissues were washed in ice-cold saline and blotted dry on Whatman paper. 
 Kidneys were added to centrifuge tube filters with a 0.45 &micro;m-pore cellulose acetate membrane and spun for 10 minutes at 8000&times;
 <i>g</i> and 4&deg;C. Recovered kidney interstitial fluids were transferred to safe-lock centrifuge tubes and snap-frozen on dry ice.&nbsp;</li>
 <li>Simultaneously, left kidneys were removed, added to cryovials and immediately snap-frozen in liquid nitrogen.&nbsp;</li>
@@ -383,16 +374,22 @@ Kidneys were added to centrifuge tube filters with a 0.45 &micro;m-pore cellulos
         
       ), #nav_panel
       nav_panel(
-        title = "Transcriptomics", 
-        value = "abouttrans"
-      ), #nav_panel
-      nav_panel(
-        title = "Proteomics", 
-        value = "aboutprot"
-      ), #nav_panel
-      nav_panel(
-        title = "Metabolomics", 
-        value = "aboutmet"
+        title = "Helpful hints", 
+        value = "abouthints", 
+        layout_column_wrap(
+          card(
+            class = "card-about", 
+            card_header("Statistics"), 
+            tags$iframe(
+              src = "About_statistics.htm",
+              style = "width: 100%; min-height: 450px; border: none; ")
+          ), #card
+          card(
+            class = "card-about", 
+            card_header("Abbreviations"), 
+            tableOutput(outputId = "abbrev_table")
+          ) #card
+        )#layout column wrap
       ), #nav_panel
       nav_panel(
         title = "Miscellaneous data", 
@@ -432,11 +429,8 @@ Kidneys were added to centrifuge tube filters with a 0.45 &micro;m-pore cellulos
           ), #div
           plotOutput(outputId = "miscplot", height = "350px")
         )#card
-      ), #nav_panel
-      nav_panel(
-        title = "Helpful hints", 
-        value = "abouthints"
       ) #nav_panel
+     
     )#navset_pill_list
   ), 
 
@@ -502,7 +496,7 @@ Kidneys were added to centrifuge tube filters with a 0.45 &micro;m-pore cellulos
         input_switch(
           id = "showstats",
           label = "Show stats",
-          value = FALSE),
+          value = TRUE),
 
         conditionalPanel(
           condition = "input.showstats == true",
@@ -616,7 +610,7 @@ Kidneys were added to centrifuge tube filters with a 0.45 &micro;m-pore cellulos
         input_switch(
           id = "metshowstats",
           label = "Show stats",
-          value = FALSE),
+          value = TRUE),
         
         conditionalPanel(
           condition = "input.metshowstats == true",
@@ -702,15 +696,6 @@ Kidneys were added to centrifuge tube filters with a 0.45 &micro;m-pore cellulos
                 ) #actionButton
               )#conditional Panel
         ), #div
-        #       radioButtons(
-        #   inputId = "dimredweigh", 
-        #   label = "Data set weight", 
-        #   choices = c("None" = 0, 
-        #               "Weight by number of features" = 1, 
-        #               "Equalise variance per dataset" = 2, 
-        #               "Use correlation distance" = 3), 
-        #   selected = 0
-        # ), 
         radioButtons(
           inputId = "dimredtype", 
           label = "Approach", 
@@ -741,11 +726,7 @@ Kidneys were added to centrifuge tube filters with a 0.45 &micro;m-pore cellulos
                <br><br> 
                <i><b>Which samples behave similarly?</b></i> → Multi-dimensional scaling of correlation distances ("), 
               shiny::actionLink("selectMDS", "MDS-corr"), 
-              HTML(")
-               <br><br> 
-               <i><b>What is shared across omics layers?</b></i> → 
-               "),#HTML 
-              shiny::actionLink("gomixomics", "MixOmics") 
+              HTML(")")
             )
           ), #card
           card(
@@ -758,7 +739,7 @@ Kidneys were added to centrifuge tube filters with a 0.45 &micro;m-pore cellulos
   ),#tabpanel
   #Pathway Analysis panel ---- 
   nav_panel(
-    title = "Pathway Analysis", 
+    title = "Pathway analysis", 
     value = "pathway", 
     layout_sidebar(
       sidebar = sidebar(
@@ -1058,67 +1039,11 @@ Kidneys were added to centrifuge tube filters with a 0.45 &micro;m-pore cellulos
       div(
         uiOutput(outputId = "eulercontent") %>% withSpinner(type= 7)
       )
-      # div(
-      #   #style = "display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto; gap: 10px; width: 100%; ", 
-      #   div(
-      #     style = "width: 100%; ", 
-      #     card(
-      #       class = "card-content", 
-      #       card_header(h3("Comparison results", class = "text-center", style = "margin: 0;")),
-      #       # h4("First list"),
-      #       navset_tab(
-      #         nav_panel("First list", DTOutput(outputId = "eulertable1")),
-      #         nav_panel("Second list", DTOutput(outputId = "eulertable2")),
-      #         nav_panel("Shared", DTOutput(outputId = "eulershared")),
-      #         nav_panel("Unique to first list", DTOutput(outputId = "eulerunique1")),
-      #         nav_panel("Unique to second list", DTOutput(outputId = "eulerunique2"))
-      #       ) #end of navset_tab
-      #     )  #end of card
-      #   ), #table div 
-      #     card(
-      #       style = "width: fit-content; ", 
-      #       max_height = "300px", 
-      #       class = "card-content-sm", 
-      #       card_header(h3("Euler diagram", class = "text-center", style = "margin: 0;")),
-      #       div(
-      #         style = "display: grid; grid-template-columns: auto auto; gap: 10px; align-items: center;",
-      #         div(
-      #           style = "width: 320px; height: 250px; display: flex; align-items: center; justify-content: center; ", 
-      #           plotOutput(outputId = "eulerdiagram" , width = "300px", height = "230px")
-      #         ),
-      #         div(
-      #           style = "max-width: 200px; display: flex; flex-direction: column; align-items: center;  ", 
-      #           h4("Euler settings", style = "margin-bottom: 10px; " ), 
-      #           colourInput(
-      #             inputId = "eulercol1",
-      #             label = "Colour for first list",
-      #             value = "#106107AF",
-      #             allowTransparent = TRUE,
-      #             closeOnClick = FALSE,
-      #             width = "150px"
-      #           ),
-      #           colourInput(
-      #             inputId = "eulercol2",
-      #             label = "Colour for second list",
-      #             value = "#1B7DBF9B",
-      #             allowTransparent = TRUE,
-      #             closeOnClick = FALSE,
-      #             width = "150px"
-      #           ), 
-      #           actionButton(
-      #             inputId = "reseteulercolours", 
-      #             label = "Reset colours",
-      #             class = "btn-outline-secondary btn-sm"
-      #           )
-      #         ) #colour settings div 
-      #       )#whole card div 
-      #       )# end of card 
-      #   )#end of largediv 
     )#end of sidebarLayout
   ), #end of tabPanel
       #Fungal Omics Panel ----
   nav_panel(
-        title = "Fungal Omics",
+        title = "Fungal transcriptomics",
         value = "fungalomics",
         layout_sidebar(
           sidebar = sidebar(
@@ -1157,26 +1082,27 @@ Kidneys were added to centrifuge tube filters with a 0.45 &micro;m-pore cellulos
               label = "FDR cut-off",
               value = 0.05
             ),
+            actionButton(
+              inputId = "fungalreset",
+              label = "Reset all",
+              class = "btn btn-secondary btn-sm"
+            ),
             selectizeInput(
               label = "Feature",
               inputId = "fungalfeature",
-              choices = NULL)#,
-            # h4("Proteomics settings"), 
-            # radioButtons(
-            #   inputId = "fungalprotnorm", 
-            #   label = "Normalisation", 
-            #   choices = c("None" = "none", 
-            #               "Total fungal protein" = "total", 
-            #               "Median" = "median", 
-            #               "Fungal 18S/RDN25 qPCR" = "qPCR"), 
-            #   selected = "total"
-            # ), 
-            # actionButton(
-            #   inputId = "fungalprotnormgo", 
-            #   label = "Apply normalisation", 
-            #   icon = icon("calculator"),
-            #   class = "btn btn-secondary btn-sm"
-            # )
+              choices = NULL), 
+            input_switch(
+              id = "fungalshowstats",
+              label = "Show stats",
+              value = TRUE), 
+            conditionalPanel(
+              condition = "input.fungalshowstats == true",
+              radioButtons(
+                inputId = "fungalstatrep",
+                label = "Stats representation",
+                choices = list("numerical (p = 2e-3)" = 1, "asterisks (***)" = 2),
+                selected = 2))
+           
           ),
           layout_column_wrap(
             width = 1,  
@@ -1185,7 +1111,7 @@ Kidneys were added to centrifuge tube filters with a 0.45 &micro;m-pore cellulos
               navset_card_tab(
                 id = "fungaltabs", 
                 nav_panel(
-                  title = "Volcanoes", 
+                  title = "Plots", 
                   layout_column_wrap(
                     width = "400px", 
                     gap = "10px", 
@@ -1209,7 +1135,7 @@ Kidneys were added to centrifuge tube filters with a 0.45 &micro;m-pore cellulos
                   )#layout_column_wrap
                 ), 
                 nav_panel(
-                  title = "Transcriptomics stats", 
+                  title = "Stats table", 
                   DTOutput(outputId = "fungaltransstattable")%>% withSpinner(type = 7), 
                   div(
                     width = "200px", 
@@ -1221,11 +1147,7 @@ Kidneys were added to centrifuge tube filters with a 0.45 &micro;m-pore cellulos
                     )
                   )
                 
-                ),  #nav_panel
-                nav_panel(
-                  title = "Proteomics stats", 
-                  DTOutput(outputId = "fungalprotstattable") %>% withSpinner(type = 7)
-                )
+                )  #nav_panel
            
           )#navset_card_tab
             )#div
@@ -1233,20 +1155,6 @@ Kidneys were added to centrifuge tube filters with a 0.45 &micro;m-pore cellulos
           
         )#layout sidebar
       ),#nav_panel, 
-  #mixOmics panel----
-  nav_panel(
-    title = "mixOmics",
-    value = "mixomics",
-    layout_sidebar(
-      sidebar = sidebar(
-        title = "Settings", 
-        width = 250,
-        position = "left", 
-        h4("Settings to come") 
-      ),
-      h4("Content to come")
-    )
-  )
   
 )
 
@@ -1255,8 +1163,6 @@ Kidneys were added to centrifuge tube filters with a 0.45 &micro;m-pore cellulos
 server <- function(input, output, session) {
   
   #lazy loading data ---- 
-  print("starting app")
-  Sys.time()%>% print()
   trans.plotdata <- reactiveVal(NULL)
   all_genes <- reactiveVal(NULL)
   trans.statdata <- reactiveVal(NULL)
@@ -1266,15 +1172,8 @@ server <- function(input, output, session) {
   prot.statdata <- reactiveVal(NULL)
   prot.lookup <- reactiveVal(NULL)
   metstd <- reactiveVal(NULL)
-  # names <- reactiveVal(NULL)
-  #met.lookup <- reactiveVal(NULL)
   met.data <- reactiveVal(NULL)
-  # gene_aliases <- reactiveVAl(NULL)
-  # gene_aliases_trans <- reactiveVal(NULL)
-  # gene_aliases_prot <- reactiveVal(NULL)
   pathwaylist.all <- reactiveVal(NULL)
-  # pathlist <- reactiveVal(NULL)
-  # pathway.options <- reactiveVal(NULL)
   all_features <- reactiveVal(NULL)
   misc.data <- reactiveVal(NULL)
   misc.data.trans <- reactiveVal(NULL)
@@ -1287,63 +1186,38 @@ server <- function(input, output, session) {
       h3("Loading app...")
     )
   )
-    print("loading data")
-    Sys.time()%>% print()
-    print("trans.plotdata")
-    trans.plotdata(qs_read(file = file.path("data", "HS17_transcriptomics_plotdata.qs2")))
-    print("all_genes")
+    trans.plotdata(qs_read(file = file.path("data", "CanDi_transcriptomics_plotdata.qs2")))
     all_genes(trans.plotdata()$gene %>% unique() %>% sort())
-    print("trans.statdata")
-    trans.statdata(qs_read(file = file.path("data", "HS17_transcriptomics_statdata.qs2")))
-    prot.plotdata(qs_read(file = file.path("data", "HS17_proteomics_plotdata.qs2")) %>%
+    trans.statdata(qs_read(file = file.path("data", "CanDi_transcriptomics_statdata.qs2")))
+    prot.plotdata(qs_read(file = file.path("data", "CanDi_proteomics_plotdata.qs2")) %>%
                     subset(PG.Organisms == "Mus musculus"))
     all_prot_genes(prot.plotdata()$gene %>% unique())
     all_proteins(prot.plotdata()$ProteinID %>% unique() %>% sort())
-    prot.statdata(qs_read(file = file.path("data", "HS17_proteomics_statdata.qs2")) %>%
+    prot.statdata(qs_read(file = file.path("data", "CanDi_proteomics_statdata.qs2")) %>%
                     subset(PG.Organisms == "Mus musculus"))
     prot.lookup(setNames(prot.statdata()$ProteinID %>% unique(), prot.statdata()$gene %>% unique()))
-    metstd(read.csv(file = file.path("data", "HS17_Metabolomics_Metabolite-standards.csv"), stringsAsFactors = FALSE))
-    # names(read.csv("data/HS17_Metabolomics_Metabolite-names.csv", stringsAsFactors = FALSE) %>%
-    #   merge.data.frame(metstd(), all.x = TRUE) %>%
-    #   mutate(Standard = if_else(is.na(Standard), FALSE, TRUE)) %>%
-    #   mutate(Label_Conf = paste0(Label, " (conf: ", Confidence, ")")))
-    #met.lookup(setNames(names$Label, names$Metabolite))
-    met.data(qs_read(file = file.path("data", "HS17_metabolomics_data.qs2")))
-    # gene_aliases(qs_read(file = "data/HS17_omics_gene-aliases.qs2"))
-    # gene_aliases_trans(subset(gene_aliases(), value %in% all_genes()))
-    # gene_aliases_prot(subset(gene_aliases(), value %in% all_prot_genes()))
-    pathwaylist.all(qs_read(file = file.path("data", "HS17_omics_pathwaylist.all.qs2")))      
-    # pathlist(qs_read(file = "data/HS17_omics_pathlist.qs2"))
-    # pathway.options(qs_read(file = "data/HS17_omics_pathway.options.qs2"))
+    metstd(read.csv(file = file.path("data", "CanDi_Metabolomics_Metabolite-standards.csv"), stringsAsFactors = FALSE))
+    met.data(qs_read(file = file.path("data", "CanDi_metabolomics_data.qs2")))
+    pathwaylist.all(qs_read(file = file.path("data", "CanDi_omics_pathwaylist.all.qs2")))      
     all_features(data.frame(data = "trans", Category = "Transcriptomics", 
                             Feature = all_genes(), label = all_genes()) %>%
                    rbind(data.frame(data = "prot", Category = "Proteomics", Feature = all_proteins(), label = all_proteins())) %>%
                    rbind(data.frame(data = "met", Category = "Metabolomics", Feature = names$Metabolite, label = names$Label)) %>% 
                    mutate(value = paste(data, Feature, sep = "_"), 
                           name = paste(Category, label, sep = ": ")))
-    misc.data(qs_read(file = file.path("data", "HS17_omics_misc.data.qs2")))
+    misc.data(qs_read(file = file.path("data", "CanDi_omics_misc.data.qs2")))
     misc.data.trans(misc.data() %>% 
                       mutate(across(c(2:14, 16:28), log2)))
-    fungal.trans.counts(qs_read(file = file.path("data", "HS17_transcriptomics_fungal-counts.qs2")))
+    fungal.trans.counts(qs_read(file = file.path("data", "CanDi_transcriptomics_fungal-counts.qs2")))
     
-    print("finished loading data")
-    Sys.time() %>% print()
     waiter_hide()
     
   }, once = TRUE)
-  
-  shiny::observeEvent(input$main_nav, {
-    print(input$main_nav)
-    print(class(input$main_nav))
-  })
   
   transprotupdated <- reactiveVal(FALSE)
 
   #updating the selectize input fields ----
   observeEvent(input$main_nav, {
-    print("observer:update transprot selectize input start")
-    print(transprotupdated())
-    print(class(transprotupdated()))
     if(input$main_nav == "transprot" & transprotupdated() == FALSE){
       updateSelectizeInput(
         session, 
@@ -1352,7 +1226,7 @@ server <- function(input, output, session) {
         options = list(placeholder = 'Type to search...', create = FALSE), 
         server = FALSE
       )
-      print('updating tpfeature selectize')
+
       updateSelectizeInput(
         session, 
         inputId = "tpfeature", 
@@ -1362,15 +1236,15 @@ server <- function(input, output, session) {
           placeholder = "Type to search..."
         ), 
         server = FALSE)
-      print("done updating tpfeature selectize")
+
       transprotupdated(TRUE)
     }
-    print("observer:update transprot selectize input end")
+
   }, ignoreInit = TRUE, once = FALSE)
   
   metupdated <- reactiveVal(FALSE)
   observeEvent(input$main_nav, {
-    print("observer:update met selectize input start")
+
     if(input$main_nav == "met" & metupdated() == FALSE){
       updateSelectizeInput(
         session, 
@@ -1384,14 +1258,15 @@ server <- function(input, output, session) {
       )
       metupdated(TRUE)
     }
-    print("observer:update transprot selectize input end")
+
   }, ignoreInit = TRUE, once = FALSE)
+  
+  
   
   corrupdated <- reactiveVal(FALSE)
   observeEvent(input$main_nav, {
-    print("observer:update corr selectize input start")
+
     if(input$main_nav == "corr" & corrupdated() == FALSE){
-      print('updating corr selectizes')
       updateSelectizeInput(
         session, 
         inputId = "corrx_trans", 
@@ -1479,12 +1354,14 @@ server <- function(input, output, session) {
       
       corrupdated(TRUE)
     }
-    print("observer:update corr selectize input end")
   }, ignoreInit = TRUE, once = FALSE)
   
 
   
   #making sure the links on the landing page work----
+  observeEvent(input$logo_click, {
+    updateNavbarPage(session, "main_nav", selected = "home")
+  })
   observeEvent(input$goabout, {
     updateNavbarPage(session, "main_nav", selected = "about")
   })
@@ -1512,10 +1389,6 @@ server <- function(input, output, session) {
   observeEvent(input$gofungal, {
     updateNavbarPage(session, "main_nav", selected = "fungalomics")
   })  
-  observeEvent(input$gomixomics, {
-    updateNavbarPage(session, "main_nav", selected = "mixomics")
-  })
-  
   
   observeEvent(input$selectPCA, {
     updateRadioButtons(
@@ -1574,6 +1447,34 @@ server <- function(input, output, session) {
     )
   })
   
+  observeEvent(input$fungalreset, {
+    updateNumericInput(
+      session, 
+      inputId = "fungaltransreads", 
+      value = 5
+    )
+    updateNumericInput(
+      session, 
+      inputId = "fungaltranscpm", 
+      value = 0
+    )
+    updateNumericInput(
+      session, 
+      inputId = "fungaltranscpmn", 
+      value = 0
+    )
+    updateNumericInput(
+      session, 
+      inputId = "fungalvolcfc", 
+      value = 2
+    )
+    updateNumericInput(
+      session, 
+      inputId = "fungalvolcp", 
+      value = 0.05
+    )
+  })
+  
 
   selected_tpfeature <- reactiveVal(NULL)
   selected_mfeature <- reactiveVal(NULL)
@@ -1581,14 +1482,12 @@ server <- function(input, output, session) {
   selected_fungalfeature <- reactiveVal("")
 
   observeEvent(input$tpfeature, {
-    print("observer:input$tpfeature start")
     if(is.null(input$tpfeature) || input$tpfeature == "") return()
     if(clickupdate_tpfeature()) return()
     if(!identical(selected_tpfeature(), input$tpfeature)){
       
       selected_tpfeature(input$tpfeature)
     }
-    print("observer:input$tpfeature end")
 
   })
 
@@ -1597,9 +1496,10 @@ server <- function(input, output, session) {
     
   })
   
-  # observeEvent(input$tpfeature, {
-  #  
-  # })
+  observeEvent(input$fungalfeature, {
+    selected_fungalfeature(input$fungalfeature)
+  })
+  
 
   #observing plotly_click events---- 
   observeEvent(plotly::event_data("plotly_click", source = "transprott"), {
@@ -1661,14 +1561,18 @@ server <- function(input, output, session) {
     req(click$key)
     selected_fungalfeature(as.character(click$key))
     
-    # updateSelectizeInput(
-    #   session,
-    #   inputId = "mfeature",
-    #   selected = click$key
-    # )
+    updateSelectizeInput(
+      session,
+      inputId = "fungalfeature",
+      selected = click$key
+    )
   })
   
   ##### ABOUT ##### 
+  #abbrev table ----
+  output$abbrev_table <- renderTable({
+    abbreviations
+  }, striped = TRUE, hover = TRUE, bordered = FALSE, spacing = "s", align = "rl", rownames = FALSE, width = "auto")
   
   #observe actionButton aboutmiscprev ----
   observeEvent(input$aboutmiscprev, {
@@ -1728,20 +1632,16 @@ server <- function(input, output, session) {
     req(nzchar(input$selected_misc))
     
     ftr <- paste0("Misc_", input$selected_misc)
-    
     data <- misc.data() %>%
       select(c("Mouse", ftr)) %>% 
       na.omit() %>% 
       dplyr::rename(Feature = ftr) %>% 
       merge.data.frame(metadata, by = "Mouse") 
-      
     
    
     name <- misc.lookup[input$selected_misc]
-    
     Max <- max(data[, "Feature"])
     Min <- min(data[, "Feature"])
-    
     ytitle = parse(text = misc.data.names[misc.data.names$Measurement == input$selected_misc, "Label2"])
     
     if(nrow(data) < 24){
@@ -1801,7 +1701,6 @@ server <- function(input, output, session) {
       
     }
     else {
-      print("else")
       stats <- data %>% 
         wilcox_test(Feature ~ Group, exact = TRUE, 
                     comparisons = list(c("Con_PBS", "T2D_PBS"), 
@@ -2141,33 +2040,12 @@ server <- function(input, output, session) {
    
     Max <- max(metdf[, "Intlog2"])
     Min <- min(metdf[, "Intlog2"])
-    # if(Min < 0){
-    #   
-    #   if(Max < 0){
-    #     pbs <- prettybreaks_neg(min = Min, max = 1)
-    #     plotrange <- pbs[2]-pbs[1]
-    #     plotmin <- pbs[1]
-    #     plotmax <- pbs[2]
-    #     breaks <- seq(pbs[1], pbs[2], plotrange/pbs[3])
-    #   }
-    #   else{
-    #     pbs <- prettybreaks_neg(min = Min, max = Max)
-    #     plotrange <- pbs[2]-pbs[1]
-    #     plotmin <- pbs[1]
-    #     plotmax <- pbs[2]
-    #     breaks <- seq(pbs[1], pbs[2], plotrange/pbs[3])
-    #   }
-    #   
-    # }
-    # else{
       pbs <- prettybreaks_log2(Min, Max)
       plotrange <- pbs[2]-pbs[1]
       plotmin <- pbs[1]
       plotmax <- pbs[2]
       breaks <- seq(pbs[1], pbs[2], plotrange/pbs[3])
-      #plotrange <- plotmax - plotmin
-    # }
-    
+
     set.seed(seed = 793)
     
     
@@ -2378,11 +2256,7 @@ server <- function(input, output, session) {
       labs(title = "Transcriptomics")
     
     
-    message("sig can prot up")
-    pvolcdf %>% 
-      subset(adj.P.Val < tpp & logFC > log2(tpfc)) %>% 
-      str() %>% 
-      print() 
+
     protvolcplot <- ggplot(data = pvolcdf, mapping = aes(x = logFC, y = -log10(adj.P.Val), 
                                                    key = ProteinID, text = paste0(
                                                      "<b>", ProteinID, "</b><br>", 
@@ -2479,18 +2353,6 @@ server <- function(input, output, session) {
         xaxis = list(title = "log<sub>2</sub> Fold Change (FC)", titlefont = list(size = 14), tickfont = list(size = 10)),
         yaxis = list(title = "-log<sub>10</sub> False Discovery Rate (FDR)", titlefont = list(size = 14), tickfont = list(size = 10))
       ) %>%
-      # plotly::add_markers(
-      #   x = c(NA_real_), 
-      #   y = c(NA_real_), 
-      #   type = "scatter", 
-      #   mode = "markers", 
-      #   marker = list(color = "black", size = 10, opacity = 0.8), 
-      #   name = "selected", 
-      #   hoveron = "points", 
-      #   text = "selected",
-      #   inherit = FALSE
-      #   
-      # ) %>%
       plotly::event_register("plotly_click")
     
 
@@ -2521,32 +2383,12 @@ server <- function(input, output, session) {
     name <- paste(selected_tpfeature())
     Max <- max(transdf[, "CPMlog2"])
     Min <- min(transdf[, "CPMlog2"])
-    # if(Min < 0){
-    #   
-    #   if(Max < 0){
-    #     pbs <- prettybreaks_neg(min = Min, max = 1)
-    #     plotrange <- pbs[2]-pbs[1]
-    #     plotmin <- pbs[1]
-    #     plotmax <- pbs[2]
-    #     breaks <- seq(pbs[1], pbs[2], plotrange/pbs[3])
-    #   }
-    #   else{
-    #     pbs <- prettybreaks_neg(min = Min, max = Max)
-    #     plotrange <- pbs[2]-pbs[1]
-    #     plotmin <- pbs[1]
-    #     plotmax <- pbs[2]
-    #     breaks <- seq(pbs[1], pbs[2], plotrange/pbs[3])
-    #   }
-    #   
-    # }
-    # else{
     pbs <- prettybreaks_log2(Min, Max)
     plotrange <- pbs[2]-pbs[1]
     plotmin <- pbs[1]
     plotmax <- pbs[2]
     breaks <- seq(pbs[1], pbs[2], plotrange/pbs[3])
-    #plotrange <- plotmax - plotmin
-    # }
+
 
     set.seed(seed = 793)
 
@@ -2760,32 +2602,11 @@ server <- function(input, output, session) {
     name <- paste(selected_tpfeature())
     Max <- max(protdf[, "Intlog2"])
     Min <- min(protdf[, "Intlog2"])
-    # if(Min < 0){
-    #   
-    #   if(Max < 0){
-    #     pbs <- prettybreaks_neg(min = Min, max = 1)
-    #     plotrange <- pbs[2]-pbs[1]
-    #     plotmin <- pbs[1]
-    #     plotmax <- pbs[2]
-    #     breaks <- seq(pbs[1], pbs[2], plotrange/pbs[3])
-    #   }
-    #   else{
-    #     pbs <- prettybreaks_neg(min = Min, max = Max)
-    #     plotrange <- pbs[2]-pbs[1]
-    #     plotmin <- pbs[1]
-    #     plotmax <- pbs[2]
-    #     breaks <- seq(pbs[1], pbs[2], plotrange/pbs[3])
-    #   }
-    #   
-    # }
-    # else{
     pbs <- prettybreaks_log2(Min, Max)
     plotrange <- pbs[2]-pbs[1]
     plotmin <- pbs[1]
     plotmax <- pbs[2]
     breaks <- seq(pbs[1], pbs[2], plotrange/pbs[3])
-    #plotrange <- plotmax - plotmin
-    # }
 
     set.seed(seed = 793)
 
@@ -2936,7 +2757,6 @@ server <- function(input, output, session) {
   output$dimredplot <- renderPlotly({
     req(input$main_nav == "dimred")
     req(!is.null(input$dimreddata))
-    #print(input$dimreddata)
     trans_df <- trans.plotdata() %>%
       dplyr::select(Mouse, Geneid, CPMlog2) %>%
       pivot_wider(values_from = "CPMlog2", names_from = "Mouse") %>%
@@ -2981,7 +2801,6 @@ server <- function(input, output, session) {
         rbind(paste0(input$dimreddata[3], "_df") %>% get())
     }
     
-    #print(dim(dimred_df))
 
 
     
@@ -2990,7 +2809,6 @@ server <- function(input, output, session) {
       dist_mat <- as.dist(1-cor(dimred_df))
 
      
-      #print(dist_mat)
 
       
       mds <- cmdscale(dist_mat, k = 23, eig = TRUE) 
@@ -3007,9 +2825,7 @@ server <- function(input, output, session) {
       
       Dimname <- "Dim"
       Tit <- "Multi-dimensional scaling"
-      #print(var_exp)
-      
-      #print(mds.plot)
+
 
     } else if(input$dimredtype == "pca"){
       
@@ -3077,14 +2893,6 @@ server <- function(input, output, session) {
     
     p
   })
-  # #output$dimredmessage ---- 
-  # output$dimredmessage <- renderText({
-  #   if (is.null(input$dimreddata)) {
-  #     "\n\nSelect at least one data set to display a dimensionality reduction plot"
-  #   } else{
-  #     ""
-  #   }
-  # }) #end of output cpm message
   
   #output$dimred_content----
   output$dimred_content <- renderUI({
@@ -3902,7 +3710,6 @@ server <- function(input, output, session) {
         nzchar(input$eulerdir1), 
         nzchar(input$eulerdir2))
     
-    print("entered edfs reactive") 
     if(input$eulerdata1 == "prot") {ftr1 <- "gene"}
     else if(input$eulerdata1 == "trans") {ftr1 <- "Geneid"}
     else if (input$eulerdata1 == "met"){ftr1 <- "Metabolite"}
@@ -4244,8 +4051,7 @@ server <- function(input, output, session) {
   ##### Fungal OMICS ##### 
   fungal.trans <- reactiveVal(NULL)
   
-  observeEvent(input$fungaltranscalc, {
-    print("fungaltranscalc clicked")
+  observeEvent(c(input$fungaltranscalc, input$fungalreset), {
     x <- fungal.trans.counts()
     id_cols <- c("Geneid", "gene", "product")
     counts <- x[, -c(1:length(id_cols))]
@@ -4286,8 +4092,21 @@ server <- function(input, output, session) {
     fungal.trans.stat <- cbind(x[, c("Geneid", "gene")], 
                                topTable(fit2, coef = "Can", number = Inf, adjust.method = "BH", sort.by = "none"))
     
+    fungalnames <- fungal.trans.stat %>% 
+      dplyr::select(Geneid, gene) %>% 
+      mutate(Label = paste0(Geneid, " (", gene, ")"))
   
-
+    updateSelectizeInput(
+      session,
+      inputId = "fungalfeature",
+      choices = setNames(c("", fungalnames$Geneid), c("Type to search...", fungalnames$Label)),
+      selected = "",
+      options = list(
+        placeholder = "Type to search..."
+      ),
+      server = FALSE
+    )
+    
     fungal.trans(
       list(
         plot = fungal.trans.plot, 
@@ -4298,7 +4117,6 @@ server <- function(input, output, session) {
   
   observeEvent(input$main_nav, {
     req(input$main_nav == "fungalomics")
-      print("running fungal calculation")
       
       x <- fungal.trans.counts()
       id_cols <- c("Geneid", "gene", "product")
@@ -4341,7 +4159,20 @@ server <- function(input, output, session) {
                        topTable(fit2, coef = "Can", number = Inf, adjust.method = "BH", sort.by = "none"))
       
       
-
+      fungalnames <- fungal.trans.stat %>% 
+        dplyr::select(Geneid, gene) %>% 
+        mutate(Label = paste0(Geneid, " (", gene, ")"))
+      
+      updateSelectizeInput(
+        session,
+        inputId = "fungalfeature",
+        choices = setNames(c("", fungalnames$Geneid), c("Type to search...", fungalnames$Label)),
+        selected = "",
+        options = list(
+          placeholder = "Type to search..."
+        ),
+        server = FALSE
+      )
       fungal.trans(
         list(
         plot = fungal.trans.plot, 
@@ -4488,39 +4319,20 @@ server <- function(input, output, session) {
     
     Max <- max(df[, "CPMlog2"])
     Min <- min(df[, "CPMlog2"])
-    # if(Min < 0){
-    #   
-    #   if(Max < 0){
-    #     pbs <- prettybreaks_neg(min = Min, max = 1)
-    #     plotrange <- pbs[2]-pbs[1]
-    #     plotmin <- pbs[1]
-    #     plotmax <- pbs[2]
-    #     breaks <- seq(pbs[1], pbs[2], plotrange/pbs[3])
-    #   }
-    #   else{
-    #     pbs <- prettybreaks_neg(min = Min, max = Max)
-    #     plotrange <- pbs[2]-pbs[1]
-    #     plotmin <- pbs[1]
-    #     plotmax <- pbs[2]
-    #     breaks <- seq(pbs[1], pbs[2], plotrange/pbs[3])
-    #   }
-    #   
-    # }
-    # else{
+
     pbs <- prettybreaks_log2(Min, Max)
     plotrange <- pbs[2]-pbs[1]
     plotmin <- pbs[1]
     plotmax <- pbs[2]
     breaks <- seq(pbs[1], pbs[2], plotrange/pbs[3])
-    #plotrange <- plotmax - plotmin
-    # }
+
     
     set.seed(seed = 793)
     
     
     p <- ggplot(data = df, mapping = aes(x = Group, y = CPMlog2))+
       scale_x_discrete(expand=expansion(mult=0, add=0.67))+
-      scale_y_continuous(name = expression("log"["2"]~"Intensity"), limits = c(plotmin, plotmax),
+      scale_y_continuous(name = expression("log"["2"]~"CPM"), limits = c(plotmin, plotmax),
                          expand = expansion(mult = 0, add = 0), breaks = breaks)+
       geom_boxplot(mapping = aes(fill = Phenotype), colour = "black", show.legend = F, fatten = 0.75, outliers = FALSE)+
       geom_jitter(mapping = aes(fill = Treatment, shape = Sex), stroke = 1.5/1.427, size = 2, width = 0.2, height = 0, show.legend = TRUE) +
@@ -4551,42 +4363,33 @@ server <- function(input, output, session) {
                                                      size = c(4, 4, 2))),
              shape = guide_legend(order = 2, override.aes = list(fill = "grey")))
     
-    # if(input$metshowstats){
-    #   
-    #   metsdf <- subset(met.calcdata()$stat.data, Metabolite == selected_mfeature()) %>%
-    #     mutate(sig = unlist(lapply(X = adj.P.Val, FUN = function(p) {
-    #       if (is.na(p) == TRUE){return(NA)}
-    #       else if (p < 0.0001) {return("****")}
-    #       else if (p < 0.001) {return ("***")}
-    #       else if (p < 0.01) {return ("**")}
-    #       else if (p < 0.05) {return("*")}
-    #       else {return ("ns")}
-    #     })), 
-    #     barx1 = as.numeric(Group1),
-    #     barx2 = as.numeric(Group2),
-    #     starx = (barx1 + barx2)/2,
-    #     ybarfact = mapply(FUN = function(grp1, grp2){
-    #       if ((grp1 == 1 & grp2 == 2) | (grp2 == 1 & grp1 == 2)){return(2)}
-    #       else if ((grp1 == 3 & grp2 == 4) | (grp2 == 3 & grp1 == 4)){return(2)}
-    #       else if ((grp1 == 1 & grp2 == 3) | (grp2 == 1 & grp1 == 3)){return(1)}
-    #       else if ((grp1 == 2 & grp2 == 4) | (grp2 == 2 & grp1 == 4)){return(0)}
-    #     }, grp1 = as.numeric(Group1), grp2 = as.numeric(Group2)))
-    #   
-    #   p <- p+
-    #     geom_segment(inherit.aes = FALSE, data = metsdf, mapping = aes(x = barx1, xend = barx2, y = plotrange*(0.98-ybarfact*0.07-0.025)+plotmin, yend = plotrange*(0.98-ybarfact*0.07-0.025)+plotmin))
-    #   
-    #   if(input$metstatrep == 1){
-    #     p <- p +
-    #       geom_text(inherit.aes = FALSE, data = metsdf, mapping = aes(x = starx, label = paste("p = ", signif(adj.P.Val, 3)), y = plotrange*(0.98-ybarfact*0.07)+plotmin), size = 3, parse = FALSE)
-    #     
-    #   }
-    #   if(input$metstatrep == 2){
-    #     p <- p +
-    #       geom_text(inherit.aes = FALSE, data = metsdf, mapping = aes(x = starx, label = sig, y = plotrange*(0.98-ybarfact*0.07)+plotmin))
-    #     
-    #   }
-    #   
-    # }
+    if(input$fungalshowstats){
+
+      fungalsdf <- subset(fungal.trans()$stat, Geneid == selected_fungalfeature()) %>%
+        mutate(sig = unlist(lapply(X = adj.P.Val, FUN = function(p) {
+          if (is.na(p) == TRUE){return(NA)}
+          else if (p < 0.0001) {return("****")}
+          else if (p < 0.001) {return ("***")}
+          else if (p < 0.01) {return ("**")}
+          else if (p < 0.05) {return("*")}
+          else {return ("ns")}
+        })))
+
+      p <- p+
+        geom_segment(inherit.aes = FALSE, data = fungalsdf, mapping = aes(x = 1, xend = 2, y = plotrange*(0.98-0.07-0.025)+plotmin, yend = plotrange*(0.98-0.07-0.025)+plotmin))
+
+      if(input$fungalstatrep == 1){
+        p <- p +
+          geom_text(inherit.aes = FALSE, data = fungalsdf, mapping = aes(x = 1.5, label = paste("p = ", signif(adj.P.Val, 3)), y = plotrange*(0.98-0.07)+plotmin), size = 3, parse = FALSE)
+
+      }
+      if(input$fungalstatrep == 2){
+        p <- p +
+          geom_text(inherit.aes = FALSE, data = fungalsdf, mapping = aes(x = 1.5, label = sig, y = plotrange*(0.98-0.07)+plotmin))
+
+      }
+
+    }
     
     
     
@@ -4613,7 +4416,20 @@ server <- function(input, output, session) {
           class = "msg")
       )
       
-    }  else{
+    }  else if(!selected_fungalfeature() %in% fungal.trans()$stat$Geneid) {
+      tags$div(
+        style = "
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 50px;
+      ",
+        p("Gene not present in data set with current filtering settings", 
+          class = "msg")
+      )}
+      else{
       tags$div(
         style = "
         height: 100%;

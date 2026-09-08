@@ -1,0 +1,10 @@
+Abbreviation,Description
+Can,C. albicans-infected animal(s)
+Con,Control mice (+/+ or db/+)
+CPM,Counts per million 
+FC,Fold change
+FDR,False-discovery rate (Benjamini-Hochberg-adjusted p-value)
+MDS,Multi-dimensional scaling
+PBS,Uninfected animal(s)
+PCA,Principal component analysis
+T2D,Diabetic mice (db/db)

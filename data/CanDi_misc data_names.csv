@@ -22,7 +22,7 @@ Infection_age,Miscellaneous: Age at infection,"""Age at infection (log""[2]~""wk
 KIF,Miscellaneous: Kidney interstitial fluid volume,"""Kidney interstitial fluid (log""[2]~mu*""l)""","""Kidney interstitial fluid (""*mu*""l)"""
 hrs_to_cull,Miscellaneous: Time to cull,"""Time to cull (log""[2]~""h)""","""Time to cull (h)"""
 Organweight_Kidney_rel,"Organ weight, relative: Kidney","""Right kidney (log""[2]~""g per g body weight)""","""Right kidney (g per g body weight)"""
-Organweight_Lung_rel,"Organ weight, relative: Lung","""Lungs (log""[2]~""g per g body weight)""","""Lungs g per g body weight)"""
+Organweight_Lung_rel,"Organ weight, relative: Lung","""Lungs (log""[2]~""g per g body weight)""","""Lungs (g per g body weight)"""
 Organweight_Kidney,"Organ weight: absolute, Kidney","""Right kidney (log""[2]~""g)""","""Right kidney (g)"""
 Organweight_Lung,"Organ weight: absolute, Lung","""Lungs (log""[2]~""g)""","""Lungs (g)"""
 qPCR_RE_18S,qPCR: Fungal 18S,"""Fungal""~italic(""18S"")~""(log""[2]~""RE vs. mouse""~italic(""Tbp"")*"")""","""Fungal""~italic(""18S"")~""(RE vs. mouse""~italic(""Tbp"")*"")"""
