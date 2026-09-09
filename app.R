@@ -35,8 +35,8 @@ library(waiter)
 library(clusterProfiler)
 library(msigdbr)
 library(renv)
-source("R/HelperFunctions.R")
-source("R/LoadData.R")
+# source("R/HelperFunctions.R")
+# source("R/LoadData.R")
 
 
 
@@ -396,6 +396,7 @@ Kidneys were added to centrifuge tube filters with a 0.45 &micro;m-pore cellulos
         value = "aboutmisc", 
         card(
           class = "card-custom", 
+          style = "justify-content: left; ",
           div(
             style = "
             display:grid; 
@@ -427,7 +428,11 @@ Kidneys were added to centrifuge tube filters with a 0.45 &micro;m-pore cellulos
               class = "button-grey-sm"
             )
           ), #div
-          plotOutput(outputId = "miscplot", height = "350px")
+          div(
+            style = "width: fit-content; margin-right: auto; margin-left: 0; min-width: 400px; ",
+            plotOutput(outputId = "miscplot", height = "350px")
+            )
+          
         )#card
       ) #nav_panel
      
@@ -1123,13 +1128,13 @@ Kidneys were added to centrifuge tube filters with a 0.45 &micro;m-pore cellulos
                       class = "card-content", 
                       
                       card_body(
-                        plotlyOutput("fungaltransvolcano", height = "340px")
+                        plotlyOutput("fungaltransvolcano", height = "340px") %>% withSpinner(type = 7)
                       )
                     ), 
                     card(
                       class = "card-content", 
                       card_body(
-                        uiOutput("fungalint_content")
+                        uiOutput("fungalint_content")%>% withSpinner(type = 7)
                       )
                     )#card 
                   )#layout_column_wrap
@@ -2920,15 +2925,24 @@ server <- function(input, output, session) {
   })
   
   ##### PATHWAY ANALYSIS ##### 
+  #lazyloading pathway data ----
+  pathway.cache <- reactive({
+    req(input$main_nav == "pathway")
+    
+    # Show a loading notification or spinner while reading
+    id <- showNotification("Loading pathway database...", duration = NULL, closeButton = FALSE)
+    on.exit(removeNotification(id), add = TRUE)
+    
+    qs_read(file = file.path("data", "CanDi_omics_pathway.cache.qs2"))
+    
+  })
+  
   #PAresults reactive ---- 
   PAresults <- eventReactive(input$pathwaycalc, {
-    selection <- subset(pathway.options, id == input$pathwayid)
+    genesets <- subset(pathway.cache(), id == input$pathwayid)
     
-    if(nzchar(selection[1, "gs_subcollection"])){
-      genesets <- msigdbr(db_species = selection[1, "dbs"], species = "Mus musculus", collection = selection[1,"gs_collection"], subcollection = selection[1,"gs_subcollection"])
-    } else{
-      genesets <- msigdbr(db_species = selection[1, "dbs"], species = "Mus musculus", collection = selection[1,"gs_collection"])
-    }
+    pathway.label <- genesets$gs_collection_name[1]
+  
     
     genelist <- split(genesets$gene_symbol, genesets$gs_name)
    
@@ -3001,9 +3015,10 @@ server <- function(input, output, session) {
       mutate(Geneset = mapply(FUN = str_extract, string = Description, MoreArgs = list(pattern = "^[^_]*") ), 
              Pathway = mapply(FUN = substr, x = Description, start = nchar(Geneset)+2, stop = nchar(Description)) 
              %>% gsub(pattern = "_", replacement = " ", x = .) %>% str_wrap(width = 40)) %>%
-      mutate(Dataset = factor(Dataset, levels = c("Transcriptomics", "Proteomics")))
+      mutate(Dataset = factor(Dataset, levels = c("Transcriptomics", "Proteomics")), 
+             Pathway = if_else(nzchar(Pathway), Pathway, Description))
     
-    
+    head(results) %>% print() 
     if(input$pathwaymethod == "GSEA"){
       order <- results %>% 
         arrange(desc(NES)) %>% 
@@ -3017,6 +3032,7 @@ server <- function(input, output, session) {
       
       results <- results %>%
         mutate(Count = str_count(core_enrichment, "/") + 1) 
+      
       
       maxcount <- results %>% 
         group_by(Dataset) %>% 
@@ -3058,7 +3074,7 @@ server <- function(input, output, session) {
               strip.background = element_blank(), 
               strip.text = element_text(size = 13, colour = "black", face = "bold"))+
         coord_cartesian(clip = "off")+
-        labs(title = paste0("Top ", results$Geneset[1], " gene sets"))
+        labs(title = paste0("Top ", pathway.label, " gene sets"))
     }
     else if(input$pathwaymethod == "ORA"){
       
@@ -3113,7 +3129,7 @@ server <- function(input, output, session) {
                strip.background = element_blank(), 
                strip.text = element_text(size = 12, colour = "black", face = "bold"))+
          coord_cartesian(clip = "off")+
-         labs(title = paste0("Top ", results$Geneset[1], " gene sets"))
+         labs(title = paste0("Top ", pathway.label, " gene sets"))
     }
     list(trans = transresult, 
          prot = protresult, 
@@ -3227,6 +3243,25 @@ server <- function(input, output, session) {
       )
       
     }
+    else if(nrow(PAresults()$trans %>%
+                 mutate(Dataset = "Transcriptomics") %>% 
+                 rbind(PAresults()$prot %>% 
+                       mutate(Dataset = "Proteomics")) %>% 
+                 subset(p.adjust < 0.05)) < 1){
+      tags$div(
+        style = "
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 50px;
+      ",
+        p(HTML('No significantly enriched gene sets found in this collection.'), 
+          class = "msg")
+      )
+    }
+      
     else{
       tags$div(
         #style = "min-height: 250px;",
